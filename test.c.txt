@@ -1,0 +1,104 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+
+///////////////gcc -o m mutliprocess_1.c -lrt
+
+int shm_fd1;
+int shm_fd2;
+const char *name1 ="FN";
+const char *name2 ="LN";
+int fn;
+int ln;
+int *ptr1 =&fn;
+int *ptr2 =&ln;
+void *ptrfn;
+void *ptrln;
+void DoWorkInChild(){
+        int x;
+        int i;
+	int ln = 9;
+        printf("muongsorn %d\n",ln);
+        for(x=0;x<0xFFFFFFF;x++){
+                for(i=1;i<10;i++){
+//                      printf("atiwitch\n");
+                }
+        }
+	shm_fd2=shm_open(name2,O_CREAT |O_RDWR,0667);
+        ftruncate(shm_fd2,4);
+        ptrln=mmap(0,3,PROT_WRITE,MAP_SHARED,shm_fd2,0);
+        sprintf(ptrln,"%d",ln);
+        printf("Last Name Data In Function:  fn= %d  ln = %d\n",fn,ln);
+
+	shm_fd1=shm_open(name1,O_RDONLY,0666);
+        ptrfn=mmap(0,3,PROT_READ,MAP_SHARED,shm_fd1,0);
+        printf("Shared First Data In Function = %s\n",(char *)ptrfn);
+        char *tmpFN=(char*)ptrfn;
+
+}
+void DoWorkInParent(){
+        int x;
+        int i;
+	int fn = 8;
+        printf("atiwitch %d\n",fn);
+        for(x=0;x<0xFFFFFFF;x++){
+                for(i=1;i<10;i++){
+//                        printf("muongosrn\n");
+                }
+        }
+        shm_fd1=shm_open(name1,O_CREAT |O_RDWR,0666);
+        ftruncate(shm_fd1,4);
+        ptrfn=mmap(0,3,PROT_WRITE,MAP_SHARED,shm_fd1,0);
+        sprintf(ptrfn,"%d",fn);
+        printf("First Name Data In Function:  fn= %d  ln = %d\n",fn,ln);
+
+	shm_fd2=shm_open(name2,O_RDONLY,0667);
+        ptrln=mmap(0,3,PROT_READ,MAP_SHARED,shm_fd2,0);
+        printf("Shared Last Data In Function = %s\n",(char *)ptrln);
+        char *tmpLN=(char*)ptrln;
+}
+void main (){
+        pid_t pids[10];
+        int i;
+        int n = 1;
+        /* Start children. */
+        for (i = 0; i < n; ++i) {
+                pids[i] = fork();
+//              printf("pid= %d , n=%d\n",pids[i],i);
+                if (pids[i] < 0) {
+                        perror("fork");
+                        abort();
+                } else {
+                        if (pids[i] == 0) {
+                                DoWorkInChild();
+                                exit(0);
+                        }
+                }
+        }
+        DoWorkInParent();
+        /* Wait for children to exit. */
+        int status;
+        pid_t pid;
+        while (n > 0) {
+                pid = wait(&status);
+//      printf("Child with PID %ld exited with status 0x%x.\n", (long)p>
+                --n;  //
+        }
+//	shm_fd1=shm_open(name1,O_RDONLY,0666);
+//	ptrfn=mmap(0,3,PROT_READ,MAP_SHARED,shm_fd1,0);
+//	printf("Shared First Data = %s\n",(char *)ptrfn);
+//	char *tmpFN=(char*)ptrfn;
+
+//        shm_fd2=shm_open(name2,O_RDONLY,0667);
+//        ptrln=mmap(0,3,PROT_READ,MAP_SHARED,shm_fd2,0);
+//        printf("Shared Last Data = %s\n",(char *)ptrln);
+//        char *tmpLN=(char*)ptrln;
+//	printf("First Last Data:  fn= %d  ls = %d\n   fn for First =%s\n  ln for Last =%s\n",fn,ln,tmpFN,tmpLN);
+
+	printf("atiwitch %s \n muongsorn %s\n",tmpLN,tmpFN);
+}
