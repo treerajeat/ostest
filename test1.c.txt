@@ -1,0 +1,80 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+///////////////gcc -o m mutliprocess_1.c -lrt
+
+int shm_fd1;
+int shm_fd2;
+const char *name1 ="FN";
+const char *name2 ="LN";
+int fn;
+int ln;
+int *ptr1 =&fn;
+int *ptr2 =&ln;
+void *ptrfn;
+void *ptrln;
+void Process1(){
+	int x;
+	int i;
+	int fn = 7;
+        for(x=0;x<0xFFFFFFF;x++){
+                for(i=1;i<10;i++){
+
+                }
+        }
+        shm_fd1=shm_open(name1,O_CREAT |O_RDWR,0666);
+        ftruncate(shm_fd1,4);
+        ptrfn=mmap(0,3,PROT_WRITE,MAP_SHARED,shm_fd1,0);
+        sprintf(ptrfn,"%d",fn);
+
+	shm_fd2=shm_open(name2,O_RDONLY,0667);
+	ptrln=mmap(0,3,PROT_READ,MAP_SHARED,shm_fd2,0);
+	printf("Poramat %s\n",(char *)ptrln);
+}
+void Process2(){
+        int x;
+        int i;
+	int ln = 6;
+        for(x=0;x<0xFFFFFFF;x++){
+                for(i=1;i<10;i++){
+
+                }
+        }
+	shm_fd2=shm_open(name2,O_CREAT |O_RDWR,0667);
+        ftruncate(shm_fd2,4);
+        ptrln=mmap(0,3,PROT_WRITE,MAP_SHARED,shm_fd2,0);
+        sprintf(ptrln,"%d",ln);
+
+	shm_fd1=shm_open(name1,O_RDONLY,0666);
+	ptrfn=mmap(0,3,PROT_READ,MAP_SHARED,shm_fd1,0);
+	printf("Poomma %s\n",(char *)ptrfn);
+}
+void main (){
+        pid_t pids[10];
+        int i;
+        int n = 1;
+        for (i = 0; i < n; ++i) {
+                pids[i] = fork();
+                if (pids[i] < 0) {
+                        perror("fork");
+                        abort();
+                } else {
+                        if (pids[i] == 0) {
+                                Process2();
+                                exit(0);
+                        }
+                }
+        }
+        Process1();
+        int status;
+        pid_t pid;
+        while (n > 0) {
+                pid = wait(&status);
+                --n;
+        }
+}
